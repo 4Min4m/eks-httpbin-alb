@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: httpbin-public
+  namespace: default
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/conditions.httpbin-service: |
+      [{"field":"http-method","httpMethodValues":["GET"]}]
+    alb.ingress.kubernetes.io/healthcheck-path: /status/200
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /get
+        pathType: Prefix
+        backend:
+          service:
+            name: httpbin-service
+            port:
+              number: 80
