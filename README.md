@@ -142,19 +142,23 @@ Expected JSON response confirming VPC-internal access (e.g., origin IP from priv
 
 
 
+```
 Files Structure
+
 ├── terraform/
-│   ├── alb.tf              # ALB Controller and IAM policies
-│   ├── eks.tf              # EKS cluster and node groups
-│   ├── vpc.tf              # VPC, subnets, NAT Gateway, routing
-│   ├── provider.tf         # Terraform providers
-│   ├── variables.tf        # Input variables
-│   └── outputs.tf          # Output values
+│ ├── alb.tf # ALB Controller and IAM policies
+│ ├── eks.tf # EKS cluster and node groups
+│ ├── vpc.tf # VPC, subnets, NAT Gateway, routing
+│ ├── provider.tf # Terraform providers
+│ ├── variables.tf # Input variables
+│ └── outputs.tf # Output values
 └── k8s/
-    ├── deployment.yaml     # HTTPBin deployment
-    ├── service.yaml        # Kubernetes service
-    ├── ingress-public.yaml # Public ingress (/get)
-    └── ingress-private.yaml # Private ingress (/post)
+├── deployment.yaml # HTTPBin deployment
+├── service.yaml # Kubernetes service
+├── ingress-public.yaml # Public ingress (/get)
+└── ingress-private.yaml # Private ingress (/post)
+
+```
 
 Cleanup
 kubectl delete -f ../k8s/
