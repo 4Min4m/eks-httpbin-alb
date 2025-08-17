@@ -1,8 +1,7 @@
-# Defining the IAM role for the AWS Load Balancer Controller
+# Define the IAM role for the AWS Load Balancer Controller
 resource "aws_iam_role" "alb_controller_role" {
   name = "etpa-eks-alb-controller-role"
 
-  # Defining the trust relationship for the EKS OIDC provider
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -21,18 +20,16 @@ resource "aws_iam_role" "alb_controller_role" {
     ]
   })
 
-  # Adding tags for the IAM role
   tags = {
     "kubernetes.io/cluster/etpa-eks" = "owned"
   }
 }
 
-# Defining the IAM policy for the AWS Load Balancer Controller
+# Define the IAM policy for the AWS Load Balancer Controller
 resource "aws_iam_policy" "alb_controller_policy" {
   name        = "etpa-eks-AWSLoadBalancerControllerIAMPolicy"
   description = "Policy for AWS Load Balancer Controller on ETPA EKS cluster"
 
-  # Specifying the policy document with required permissions
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -75,6 +72,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:DescribeTargetGroupAttributes",
           "elasticloadbalancing:DescribeTargetHealth",
           "elasticloadbalancing:DescribeTags",
+          "elasticloadbalancing:DescribeListenerAttributes", # Added missing permission
           "cognito-idp:DescribeUserPoolClient",
           "acm:ListCertificates",
           "acm:DescribeCertificate",
@@ -243,8 +241,51 @@ resource "aws_iam_policy" "alb_controller_policy" {
   })
 }
 
-# Attaching the IAM policy to the IAM role
+# Attach the IAM policy to the IAM role
 resource "aws_iam_role_policy_attachment" "alb_controller_policy_attachment" {
   role       = aws_iam_role.alb_controller_role.name
   policy_arn = aws_iam_policy.alb_controller_policy.arn
+}
+
+# Deploy AWS Load Balancer Controller using Helm
+resource "helm_release" "aws_load_balancer_controller" {
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+
+  set {
+    name  = "clusterName"
+    value = aws_eks_cluster.main.name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.alb_controller_role.arn
+  }
+
+  set {
+    name  = "region"
+    value = "us-east-1"
+  }
+
+  set {
+    name  = "vpcId"
+    value = aws_vpc.main.id
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.alb_controller_policy_attachment,
+    aws_eks_cluster.main
+  ]
 }
