@@ -1,7 +1,12 @@
 data "aws_caller_identity" "current" {}
 
+# Get the OIDC thumbprint for EKS
+data "tls_certificate" "eks" {
+  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
+}
+
 resource "aws_iam_policy" "alb_controller" {
-  name        = "AWSLoadBalancerControllerIAMPolicy"
+  name        = "${var.cluster_name}-AWSLoadBalancerControllerIAMPolicy"
   path        = "/"
   description = "Policy for AWS Load Balancer Controller"
   policy      = jsonencode({
@@ -266,7 +271,11 @@ resource "aws_eks_cluster" "main" {
 resource "aws_iam_openid_connect_provider" "eks" {
   url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["9e99a48a9960b14926bb7f3b02e22da2b0ab7280"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  
+  tags = {
+    Name = "${var.cluster_name}-oidc"
+  }
 }
 
 resource "aws_iam_role" "alb_controller" {
@@ -282,15 +291,14 @@ resource "aws_iam_role" "alb_controller" {
       Condition = {
         StringEquals = {
           "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
         }
       }
     }]
   })
 }
 
-
 # IAM policy for AWS Load Balancer Controller to manage ALBs
-
 resource "aws_iam_role_policy_attachment" "alb_controller_policy" {
   policy_arn = aws_iam_policy.alb_controller.arn
   role       = aws_iam_role.alb_controller.name
@@ -338,7 +346,7 @@ resource "aws_eks_node_group" "main" {
   update_config {
     max_unavailable = 1
   }
-  instance_types = ["t3.small"]
+  instance_types = ["t3.medium"]  # Increased from t3.small for better performance
   ami_type = "AL2023_x86_64_STANDARD"
   capacity_type  = "ON_DEMAND"
   depends_on = [

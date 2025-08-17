@@ -2,7 +2,7 @@
 
 resource "time_sleep" "wait_for_cluster" {
   depends_on = [aws_eks_node_group.main]
-  create_duration = "60s"
+  create_duration = "180s"
 }
 
 resource "helm_release" "aws_load_balancer_controller" {
@@ -12,15 +12,19 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   version    = "1.8.1"
 
-  timeout = 150
-  
-  set {
-    name  = "awsVPCID"
-    value = aws_vpc.main.id
-  }
+  timeout = 900
+
   set {
     name  = "clusterName"
     value = var.cluster_name
+  }
+  set {
+    name  = "vpcId"
+    value = aws_vpc.main.id
+  }
+  set {
+    name  = "region"
+    value = var.region
   }
   set {
     name  = "serviceAccount.create"
@@ -40,12 +44,14 @@ resource "helm_release" "aws_load_balancer_controller" {
   }
   set {
     name  = "logLevel"
-    value = "debug"
+    value = "info"
   }
+
   depends_on = [
     aws_eks_cluster.main,
     aws_eks_node_group.main,
     aws_iam_role.alb_controller,
+    aws_iam_role_policy_attachment.alb_controller_policy,
     aws_subnet.public,
     aws_subnet.private,
     time_sleep.wait_for_cluster
