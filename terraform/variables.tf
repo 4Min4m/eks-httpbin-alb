@@ -9,9 +9,3 @@ variable "cluster_name" {
   type        = string
   default     = "etpa-eks"
 }
-
-variable "aws_account_id" {
-  description = "AWS Account ID"
-  type        = string
-  default     = "864981715490"
-}

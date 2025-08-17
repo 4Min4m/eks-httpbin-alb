@@ -1,6 +1,7 @@
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "eks_cluster" {
   name = "${var.cluster_name}-cluster-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -26,21 +27,18 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
 resource "aws_security_group" "eks_cluster" {
   name_prefix = "${var.cluster_name}-cluster-sg"
   vpc_id      = aws_vpc.main.id
-
   ingress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Consider restricting to specific IPs
+    cidr_blocks = [var.vpc_cidr]
   }
-
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
   tags = {
     Name = "${var.cluster_name}-cluster-sg"
   }
@@ -49,7 +47,7 @@ resource "aws_security_group" "eks_cluster" {
 resource "aws_eks_cluster" "main" {
   name     = var.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
-
+  version  = "1.33"
   vpc_config {
     subnet_ids              = concat(aws_subnet.private[*].id, aws_subnet.public[*].id)
     endpoint_private_access = true
@@ -57,7 +55,7 @@ resource "aws_eks_cluster" "main" {
     public_access_cidrs     = ["0.0.0.0/0"]
     security_group_ids      = [aws_security_group.eks_cluster.id]
   }
-
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   depends_on = [
     aws_iam_role_policy_attachment.eks_cluster_policy,
     aws_iam_role_policy_attachment.eks_vpc_resource_controller,
@@ -75,7 +73,6 @@ resource "aws_iam_openid_connect_provider" "eks" {
 
 resource "aws_iam_role" "alb_controller" {
   name = "${var.cluster_name}-alb-controller-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -86,7 +83,7 @@ resource "aws_iam_role" "alb_controller" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${aws_iam_openid_connect_provider.eks.url}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
         }
       }
     }]
@@ -94,13 +91,12 @@ resource "aws_iam_role" "alb_controller" {
 }
 
 resource "aws_iam_role_policy_attachment" "alb_controller_policy" {
-  policy_arn = "arn:aws:iam::${var.aws_account_id}:policy/AWSLoadBalancerControllerIAMPolicy"
+  policy_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/AWSLoadBalancerControllerIAMPolicy"
   role       = aws_iam_role.alb_controller.name
 }
 
 resource "aws_iam_role" "eks_nodes" {
   name = "${var.cluster_name}-node-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -133,15 +129,17 @@ resource "aws_eks_node_group" "main" {
   node_group_name = "${var.cluster_name}-node-group"
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = aws_subnet.private[*].id
-
   scaling_config {
-    desired_size = 3
-    max_size     = 4
-    min_size     = 2
+    desired_size = 2
+    max_size     = 3
+    min_size     = 1
   }
-
-  instance_types = ["t3.micro"]
-
+  update_config {
+    max_unavailable = 1
+  }
+  instance_types = ["t3.small"]
+  ami_type = "AL2023_x86_64_STANDARD"
+  capacity_type  = "ON_DEMAND"
   depends_on = [
     aws_iam_role_policy_attachment.eks_worker_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
@@ -149,7 +147,6 @@ resource "aws_eks_node_group" "main" {
     aws_eks_cluster.main,
     aws_subnet.private
   ]
-
   tags = {
     Name = "${var.cluster_name}-node-group"
   }
