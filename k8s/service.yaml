@@ -4,6 +4,7 @@ metadata:
   name: httpbin-service
   labels:
     app: httpbin
+  namespace: httpbin
 spec:
   type: ClusterIP
   selector:

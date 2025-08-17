@@ -1,3 +1,5 @@
+# Installs AWS Load Balancer Controller via Helm for Ingress support
+
 resource "time_sleep" "wait_for_cluster" {
   depends_on = [aws_eks_node_group.main]
   create_duration = "60s"
@@ -8,21 +10,17 @@ resource "helm_release" "aws_load_balancer_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.13.4"
+  version    = "1.8.1"
 
-  timeout = 600
-
+  timeout = 150
+  
   set {
-    name  = "clusterName"
-    value = var.cluster_name
-  }
-  set {
-    name  = "vpcId"
+    name  = "awsVPCID"
     value = aws_vpc.main.id
   }
   set {
-    name  = "region"
-    value = "us-east-1"
+    name  = "clusterName"
+    value = var.cluster_name
   }
   set {
     name  = "serviceAccount.create"
@@ -40,7 +38,10 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "enableServiceMutatorWebhook"
     value = "false"
   }
-
+  set {
+    name  = "logLevel"
+    value = "debug"
+  }
   depends_on = [
     aws_eks_cluster.main,
     aws_eks_node_group.main,

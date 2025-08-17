@@ -4,6 +4,7 @@ metadata:
   name: httpbin
   labels:
     app: httpbin
+  namespace: httpbin
 spec:
   replicas: 2  # for HA and load balancing
   selector:
@@ -42,9 +43,11 @@ spec:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /status/200
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
+          failureThreshold: 3
