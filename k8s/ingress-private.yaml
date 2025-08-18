@@ -11,6 +11,7 @@ metadata:
       [{"field":"http-method","httpMethodValues":["POST"]}]  # Restrict to POST
     alb.ingress.kubernetes.io/healthcheck-path: /status/200
     alb.ingress.kubernetes.io/healthcheck-port: "80"
+    alb.ingress.kubernetes.io/load-balancer-name: httpbin-private-alb
 spec:
   ingressClassName: alb
   rules:
