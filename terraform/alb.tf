@@ -2,7 +2,7 @@
 locals {
   oidc_issuer_url = aws_eks_cluster.main.identity[0].oidc[0].issuer
   oidc_issuer_id  = split("/", local.oidc_issuer_url)[length(split("/", local.oidc_issuer_url)) - 1]
-  oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/${local.oidc_issuer_id}"
+  oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${var.region}.amazonaws.com/id/${local.oidc_issuer_id}"
 }
 
 # Define the IAM role for the AWS Load Balancer Controller
@@ -110,7 +110,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "ec2:DeleteTags"
         ]
         Resource = [
-          "arn:aws:ec2:us-east-1:${data.aws_caller_identity.current.account_id}:security-group/*"
+          "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:security-group/*"
         ]
         Condition = {
           StringEquals = {
@@ -124,7 +124,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "ec2:CreateTags",
           "ec2:DeleteTags"
         ]
-        Resource = "arn:aws:ec2:us-east-1:${data.aws_caller_identity.current.account_id}:*/*"
+        Resource = "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:*/*"
         Condition = {
           StringEquals = {
             "aws:ResourceTag/kubernetes.io/cluster/etpa-eks" = "owned"
@@ -175,9 +175,9 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RemoveTags"
         ]
         Resource = [
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:targetgroup/*",
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:loadbalancer/net/*",
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:loadbalancer/app/*"
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:targetgroup/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:loadbalancer/net/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:loadbalancer/app/*"
         ]
         Condition = {
           StringEquals = {
@@ -193,10 +193,10 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RemoveTags"
         ]
         Resource = [
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener/net/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener/app/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener-rule/net/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener-rule/app/*/*"
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener/net/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener/app/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener-rule/net/*/*",
+          "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:listener-rule/app/*/*"
         ]
       },
       {
@@ -231,7 +231,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets"
         ]
-        Resource = "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:targetgroup/*"
+        Resource = "arn:aws:elasticloadbalancing:${var.region}:${data.aws_caller_identity.current.account_id}:targetgroup/*"
       },
       {
         Effect = "Allow"
@@ -283,7 +283,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "region"
-    value = "us-east-1"
+    value = "${var.region}"
   }
 
   set {
