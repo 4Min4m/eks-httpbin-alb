@@ -1,3 +1,4 @@
+# Define the main VPC for the EKS cluster
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
@@ -8,6 +9,7 @@ resource "aws_vpc" "main" {
   }
 }
 
+# Attach an Internet Gateway to the VPC for public access
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -16,6 +18,7 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+# Create public subnets across two AZs for load balancers
 resource "aws_subnet" "public" {
   count = 2
 
@@ -27,10 +30,11 @@ resource "aws_subnet" "public" {
   tags = {
     Name                                        = "${var.cluster_name}-public-${count.index + 1}"
     "kubernetes.io/cluster/${var.cluster_name}" = "owned"
-    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/role/elb"                    = "1"  # Tag for public ELB discovery
   }
 }
 
+# Create private subnets across two AZs for EKS nodes
 resource "aws_subnet" "private" {
   count = 2
 
@@ -41,10 +45,11 @@ resource "aws_subnet" "private" {
   tags = {
     Name                                        = "${var.cluster_name}-private-${count.index + 1}"
     "kubernetes.io/cluster/${var.cluster_name}" = "owned"
-    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/role/internal-elb"           = "1"  # Tag for internal ELB discovery
   }
 }
 
+# Allocate an Elastic IP for the NAT Gateway
 resource "aws_eip" "nat" {
   count  = 1
   domain = "vpc"
@@ -54,8 +59,9 @@ resource "aws_eip" "nat" {
   }
 }
 
+# Create a single NAT Gateway in one public subnet for cost efficiency
 resource "aws_nat_gateway" "main" {
-  count = 1                            # Single NAT for cost; duplicate for full HA
+  count = 1
 
   allocation_id = aws_eip.nat[0].id
   subnet_id     = aws_subnet.public[0].id
@@ -67,6 +73,7 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
+# Route table for public subnets directing traffic to the Internet Gateway
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -82,6 +89,7 @@ resource "aws_route_table" "public" {
   depends_on = [aws_internet_gateway.main]
 }
 
+# Route table for private subnets directing traffic to the NAT Gateway
 resource "aws_route_table" "private" {
   count  = 1
   vpc_id = aws_vpc.main.id
@@ -98,6 +106,7 @@ resource "aws_route_table" "private" {
   depends_on = [aws_nat_gateway.main]
 }
 
+# Associate public subnets with the public route table
 resource "aws_route_table_association" "public" {
   count = 2
 
@@ -107,6 +116,7 @@ resource "aws_route_table_association" "public" {
   depends_on = [aws_route_table.public, aws_subnet.public]
 }
 
+# Associate private subnets with the private route table
 resource "aws_route_table_association" "private" {
   count = 2
 
@@ -116,6 +126,7 @@ resource "aws_route_table_association" "private" {
   depends_on = [aws_route_table.private, aws_subnet.private]
 }
 
+# Data source to fetch available Availability Zones
 data "aws_availability_zones" "available" {
   state = "available"
 }

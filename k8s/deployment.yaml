@@ -1,3 +1,4 @@
+# Deployment for HTTPBin with 2 replicas for HA
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +7,7 @@ metadata:
     app: httpbin
   namespace: httpbin
 spec:
-  replicas: 2  # for HA and load balancing
+  replicas: 2  # Ensure high availability
   selector:
     matchLabels:
       app: httpbin
@@ -23,7 +24,7 @@ spec:
               labelSelector:
                 matchLabels:
                   app: httpbin
-              topologyKey: "kubernetes.io/hostname"
+              topologyKey: "kubernetes.io/hostname"  # Spread pods across nodes
       containers:
       - name: httpbin
         image: kennethreitz/httpbin:latest
@@ -36,7 +37,7 @@ spec:
             cpu: "100m"
           limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "200m"  # Resource limits for free tier
         livenessProbe:
           httpGet:
             path: /status/200
@@ -50,4 +51,4 @@ spec:
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 3  # Probes for health checks

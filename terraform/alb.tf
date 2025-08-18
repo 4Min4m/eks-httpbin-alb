@@ -1,11 +1,11 @@
-# Extract OIDC issuer ID dynamically from EKS cluster
+# Locals to extract OIDC details dynamically
 locals {
   oidc_issuer_url = aws_eks_cluster.main.identity[0].oidc[0].issuer
   oidc_issuer_id  = split("/", local.oidc_issuer_url)[length(split("/", local.oidc_issuer_url)) - 1]
   oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${var.region}.amazonaws.com/id/${local.oidc_issuer_id}"
 }
 
-# Define the IAM role for the AWS Load Balancer Controller
+# IAM role for AWS Load Balancer Controller
 resource "aws_iam_role" "alb_controller_role" {
   name = "etpa-eks-alb-controller-role"
 
@@ -32,7 +32,7 @@ resource "aws_iam_role" "alb_controller_role" {
   }
 }
 
-# Define the IAM policy for the AWS Load Balancer Controller
+# IAM policy for AWS Load Balancer Controller with required permissions
 resource "aws_iam_policy" "alb_controller_policy" {
   name        = "etpa-eks-AWSLoadBalancerControllerIAMPolicy"
   description = "Policy for AWS Load Balancer Controller on ETPA EKS cluster"
@@ -248,13 +248,13 @@ resource "aws_iam_policy" "alb_controller_policy" {
   })
 }
 
-# Attach the IAM policy to the IAM role
+# Attach policy to ALB controller role
 resource "aws_iam_role_policy_attachment" "alb_controller_policy_attachment" {
   role       = aws_iam_role.alb_controller_role.name
   policy_arn = aws_iam_policy.alb_controller_policy.arn
 }
 
-# Deploy AWS Load Balancer Controller using Helm
+# Helm release for AWS Load Balancer Controller
 resource "helm_release" "aws_load_balancer_controller" {
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"

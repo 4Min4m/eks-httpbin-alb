@@ -1,13 +1,14 @@
+# Private Ingress for /post endpoint using internal ALB
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: httpbin-private
   namespace: httpbin
   annotations:
-    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/scheme: internal  # Internal ALB only
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/conditions.httpbin-service: |
-      [{"field":"http-method","httpMethodValues":["POST"]}]
+      [{"field":"http-method","httpMethodValues":["POST"]}]  # Restrict to POST
     alb.ingress.kubernetes.io/healthcheck-path: /status/200
     alb.ingress.kubernetes.io/healthcheck-port: "80"
 spec:

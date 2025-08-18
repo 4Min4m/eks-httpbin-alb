@@ -1,13 +1,14 @@
+# Public Ingress for /get endpoint using ALB
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: httpbin-public
   namespace: httpbin
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/scheme: internet-facing  # External ALB
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/conditions.httpbin-service: |
-      [{"field":"http-method","httpMethodValues":["GET"]}]
+      [{"field":"http-method","httpMethodValues":["GET"]}]  # Restrict to GET
     alb.ingress.kubernetes.io/healthcheck-path: /status/200
     alb.ingress.kubernetes.io/healthcheck-port: "80"
 spec:

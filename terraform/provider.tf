@@ -1,3 +1,4 @@
+# Terraform configuration and required providers
 terraform {
   required_version = ">= 1.5.0"
   required_providers {
@@ -20,10 +21,12 @@ terraform {
   }
 }
 
+# AWS provider configuration
 provider "aws" {
   region = var.region
 }
 
+# Helm provider configured for EKS
 provider "helm" {
   kubernetes {
     host                   = aws_eks_cluster.main.endpoint
@@ -36,6 +39,7 @@ provider "helm" {
   }
 }
 
+# Kubernetes provider configured for EKS
 provider "kubernetes" {
   host                   = aws_eks_cluster.main.endpoint
   cluster_ca_certificate = base64decode(aws_eks_cluster.main.certificate_authority[0].data)
