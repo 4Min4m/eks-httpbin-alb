@@ -1,3 +1,10 @@
+# Extract OIDC issuer ID dynamically from EKS cluster
+locals {
+  oidc_issuer_url = aws_eks_cluster.main.identity[0].oidc[0].issuer
+  oidc_issuer_id  = split("/", local.oidc_issuer_url)[length(split("/", local.oidc_issuer_url)) - 1]
+  oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/${local.oidc_issuer_id}"
+}
+
 # Define the IAM role for the AWS Load Balancer Controller
 resource "aws_iam_role" "alb_controller_role" {
   name = "etpa-eks-alb-controller-role"
@@ -8,12 +15,12 @@ resource "aws_iam_role" "alb_controller_role" {
       {
         Effect = "Allow"
         Principal = {
-          Federated = "arn:aws:iam::864981715490:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/A7DA37E8BE58B1E598FA740538BAB301"
+          Federated = local.oidc_provider_arn
         }
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "oidc.eks.us-east-1.amazonaws.com/id/A7DA37E8BE58B1E598FA740538BAB301:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+            "${replace(local.oidc_issuer_url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
           }
         }
       }
@@ -72,7 +79,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:DescribeTargetGroupAttributes",
           "elasticloadbalancing:DescribeTargetHealth",
           "elasticloadbalancing:DescribeTags",
-          "elasticloadbalancing:DescribeListenerAttributes", # Added missing permission
+          "elasticloadbalancing:DescribeListenerAttributes",
           "cognito-idp:DescribeUserPoolClient",
           "acm:ListCertificates",
           "acm:DescribeCertificate",
@@ -103,7 +110,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "ec2:DeleteTags"
         ]
         Resource = [
-          "arn:aws:ec2:us-east-1:864981715490:security-group/*"
+          "arn:aws:ec2:us-east-1:${data.aws_caller_identity.current.account_id}:security-group/*"
         ]
         Condition = {
           StringEquals = {
@@ -117,7 +124,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "ec2:CreateTags",
           "ec2:DeleteTags"
         ]
-        Resource = "arn:aws:ec2:us-east-1:864981715490:*/*"
+        Resource = "arn:aws:ec2:us-east-1:${data.aws_caller_identity.current.account_id}:*/*"
         Condition = {
           StringEquals = {
             "aws:ResourceTag/kubernetes.io/cluster/etpa-eks" = "owned"
@@ -168,9 +175,9 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RemoveTags"
         ]
         Resource = [
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:targetgroup/*",
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:loadbalancer/net/*",
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:loadbalancer/app/*"
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:targetgroup/*",
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:loadbalancer/net/*",
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:loadbalancer/app/*"
         ]
         Condition = {
           StringEquals = {
@@ -186,10 +193,10 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RemoveTags"
         ]
         Resource = [
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:listener/net/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:listener/app/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:listener-rule/net/*/*",
-          "arn:aws:elasticloadbalancing:us-east-1:864981715490:listener-rule/app/*/*"
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener/net/*/*",
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener/app/*/*",
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener-rule/net/*/*",
+          "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:listener-rule/app/*/*"
         ]
       },
       {
@@ -224,7 +231,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets"
         ]
-        Resource = "arn:aws:elasticloadbalancing:us-east-1:864981715490:targetgroup/*"
+        Resource = "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:targetgroup/*"
       },
       {
         Effect = "Allow"
