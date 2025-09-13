@@ -9,7 +9,7 @@ variable "vpc_cidr" {
 variable "cluster_name" {
   description = "Name of the EKS cluster"
   type        = string
-  default     = "etpa-eks"
+  default     = "aminam-eks"
 }
 
 # AWS region variable

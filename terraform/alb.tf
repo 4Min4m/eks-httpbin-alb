@@ -7,7 +7,7 @@ locals {
 
 # IAM role for AWS Load Balancer Controller
 resource "aws_iam_role" "alb_controller_role" {
-  name = "etpa-eks-alb-controller-role"
+  name = "aminam-eks-alb-controller-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -28,14 +28,14 @@ resource "aws_iam_role" "alb_controller_role" {
   })
 
   tags = {
-    "kubernetes.io/cluster/etpa-eks" = "owned"
+    "kubernetes.io/cluster/aminam-eks" = "owned"
   }
 }
 
 # IAM policy for AWS Load Balancer Controller with required permissions
 resource "aws_iam_policy" "alb_controller_policy" {
-  name        = "etpa-eks-AWSLoadBalancerControllerIAMPolicy"
-  description = "Policy for AWS Load Balancer Controller on ETPA EKS cluster"
+  name        = "aminam-eks-AWSLoadBalancerControllerIAMPolicy"
+  description = "Policy for AWS Load Balancer Controller on aminam EKS cluster"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -127,7 +127,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
         Resource = "arn:aws:ec2:${var.region}:${data.aws_caller_identity.current.account_id}:*/*"
         Condition = {
           StringEquals = {
-            "aws:ResourceTag/kubernetes.io/cluster/etpa-eks" = "owned"
+            "aws:ResourceTag/kubernetes.io/cluster/aminam-eks" = "owned"
           }
         }
       },
@@ -141,7 +141,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "etpa-eks"
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "aminam-eks"
           }
         }
       },
@@ -154,7 +154,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "aws:RequestTag/elbv2.k8s.aws/cluster" = "etpa-eks"
+            "aws:RequestTag/elbv2.k8s.aws/cluster" = "aminam-eks"
           }
         }
       },
@@ -181,8 +181,8 @@ resource "aws_iam_policy" "alb_controller_policy" {
         ]
         Condition = {
           StringEquals = {
-            "aws:RequestTag/elbv2.k8s.aws/cluster" = "etpa-eks",
-            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "etpa-eks"
+            "aws:RequestTag/elbv2.k8s.aws/cluster" = "aminam-eks",
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "aminam-eks"
           }
         }
       },
@@ -214,7 +214,7 @@ resource "aws_iam_policy" "alb_controller_policy" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "etpa-eks"
+            "aws:ResourceTag/elbv2.k8s.aws/cluster" = "aminam-eks"
           }
         }
       },
