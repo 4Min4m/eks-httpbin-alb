@@ -8,7 +8,7 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internal  # Internal ALB only
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/conditions.httpbin-service: |
-      [{"field":"http-method","httpMethodValues":["POST"]}]  # Restrict to POST
+      [{"field":"http-method","httpMethodValues":["POST"]}]
     alb.ingress.kubernetes.io/healthcheck-path: /status/200
     alb.ingress.kubernetes.io/healthcheck-port: "80"
     alb.ingress.kubernetes.io/load-balancer-name: httpbin-private-alb

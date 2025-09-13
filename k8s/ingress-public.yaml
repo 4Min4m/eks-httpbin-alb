@@ -8,7 +8,7 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing  # External ALB
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/conditions.httpbin-service: |
-      [{"field":"http-method","httpMethodValues":["GET"]}]  # Restrict to GET
+      [{"field":"http-method","httpMethodValues":["GET"]}]
     alb.ingress.kubernetes.io/healthcheck-path: /status/200
     alb.ingress.kubernetes.io/healthcheck-port: "80"
     alb.ingress.kubernetes.io/load-balancer-name: httpbin-public-alb
